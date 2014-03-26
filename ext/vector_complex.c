@@ -12,6 +12,12 @@
 #include "rb_gsl_array.h"
 #include "rb_gsl_complex.h"
 
+struct RBasicRaw {
+    VALUE flags;
+    VALUE klass;
+};
+#define RBASIC_SET_CLASS(obj, cls)     do {((struct RBasicRaw *)(obj))->klass = cls; } while (0)
+
 EXTERN VALUE cgsl_complex;
 static VALUE rb_gsl_vector_complex_inner_product(int argc, VALUE *argv, VALUE obj);
 static VALUE rb_gsl_vector_complex_product_to_m(int argc, VALUE *argv, VALUE obj);
@@ -939,9 +945,9 @@ static VALUE rb_gsl_vector_complex_trans(VALUE obj)
 static VALUE rb_gsl_vector_complex_trans2(VALUE obj)
 {
   if (CLASS_OF(obj) == cgsl_vector_complex) 
-    RBASIC(obj)->klass = cgsl_vector_complex_col;
+    RBASIC_SET_CLASS(obj, cgsl_vector_complex_col);
   else if (CLASS_OF(obj) == cgsl_vector_complex_col) 
-    RBASIC(obj)->klass = cgsl_vector_complex;
+    RBASIC_SET_CLASS(obj, cgsl_vector_complex);
   else {
     rb_raise(rb_eRuntimeError, "method trans! for %s is forbidden",
 	     rb_class2name(CLASS_OF(obj)));
@@ -1986,7 +1992,34 @@ static VALUE rb_gsl_vector_complex_zip(int argc, VALUE *argv, VALUE obj)
   return ary;
 }
 
-static int gsl_vector_complex_equal_with_eps(const gsl_vector_complex *v1,
+#ifdef GSL_1_15_LATER
+
+/* GSL 1.15 and later already have a gsl_vector_complex_equal function. */
+
+static VALUE rb_gsl_vector_complex_equal(int argc, VALUE *argv, VALUE obj)
+{
+  gsl_vector_complex *v1, *v2;
+  int ret;
+  switch (argc) {
+  case 1:
+    break;
+  default:
+    rb_raise(rb_eArgError, "Wrong number of arguments (%d for 1)\n", argc);
+  }
+  Data_Get_Struct(obj, gsl_vector_complex, v1);
+  CHECK_VECTOR_COMPLEX(argv[0]);
+  Data_Get_Struct(argv[0], gsl_vector_complex, v2);
+  ret = gsl_vector_complex_equal(v1, v2);
+  if (ret == 1) return Qtrue;
+  else return Qfalse;
+}
+
+#else
+
+/* GSL 1.14 and earlier do not have a gsl_vector_complex_equal function. We need
+ * to provide our own implementation for it. */
+
+static int rb_gsl_vector_complex_equal_with_eps(const gsl_vector_complex *v1,
   const gsl_vector_complex *v2, double eps)
 {
   gsl_complex z1, z2;
@@ -2001,7 +2034,7 @@ static int gsl_vector_complex_equal_with_eps(const gsl_vector_complex *v1,
   
 }
 
-static VALUE rb_gsl_vector_complex_equal(int argc, VALUE *argv, VALUE obj)
+static VALUE rb_rb_gsl_vector_complex_equal(int argc, VALUE *argv, VALUE obj)
 {
   gsl_vector_complex *v1, *v2;
   double eps = 1e-8;
@@ -2019,15 +2052,17 @@ static VALUE rb_gsl_vector_complex_equal(int argc, VALUE *argv, VALUE obj)
   Data_Get_Struct(obj, gsl_vector_complex, v1);
   CHECK_VECTOR_COMPLEX(argv[0]);
   Data_Get_Struct(argv[0], gsl_vector_complex, v2);
-  ret = gsl_vector_complex_equal_with_eps(v1, v2, eps);
+  ret = rb_gsl_vector_complex_equal_with_eps(v1, v2, eps);
   if (ret == 1) return Qtrue;
   else return Qfalse;
 }
 
+#endif
+
 static VALUE rb_gsl_vector_complex_not_equal(int argc, VALUE *argv, VALUE obj)
 {
   VALUE ret;
-  ret = rb_gsl_vector_complex_equal(argc, argv, obj);
+  ret = rb_rb_gsl_vector_complex_equal(argc, argv, obj);
   if (ret == Qtrue) return Qfalse;
   else return Qtrue;
 }
@@ -2235,7 +2270,7 @@ void Init_gsl_vector_complex(VALUE module)
   rb_define_method(cgsl_vector_complex, "zip", rb_gsl_vector_complex_zip, -1);
   rb_define_singleton_method(cgsl_vector_complex, "zip", rb_gsl_vector_complex_zip, -1);
   
-  rb_define_method(cgsl_vector_complex, "equal?", rb_gsl_vector_complex_equal, -1);
+  rb_define_method(cgsl_vector_complex, "equal?", rb_rb_gsl_vector_complex_equal, -1);
   rb_define_alias(cgsl_vector_complex, "==", "equal?");
   rb_define_method(cgsl_vector_complex, "not_equal?", rb_gsl_vector_complex_not_equal, -1);
   rb_define_alias(cgsl_vector_complex, "!=", "not_equal?");  

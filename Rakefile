@@ -1,6 +1,6 @@
 require 'rubygems'
-require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rubygems/package_task'
+require 'rdoc/task'
 
 RB_GSL_VERSION = File.readlines('VERSION')[0].chomp
 
@@ -8,13 +8,14 @@ spec = Gem::Specification.new do |s|
   # Basics
   s.name = 'gsl'
   s.version = RB_GSL_VERSION
+  s.license = "GPL"
   s.summary = 'Ruby interface to GNU Scientific Library'
   s.description = 'Ruby/GSL is a Ruby interface to the GNU Scientific Library, for numerical computing with Ruby'
   #s.platform = Gem::Platform::Ruby
   s.required_ruby_version = '>= 1.8.1'
   s.requirements << 'GSL (http://www.gnu.org/software/gsl/)'
   # plotlib?
-  s.add_dependency('narray', '>= 0.5.9')
+  s.add_runtime_dependency 'narray', '~> 0.5', '>= 0.5.9'
 
   # About
   s.authors = ['Yoshiki Tsunesada', 'David MacMahon']
@@ -63,15 +64,9 @@ spec = Gem::Specification.new do |s|
   #s.test_files = []
 end
 
-Rake::PackageTask.new('rb-gsl', RB_GSL_VERSION) do |pkg|
+Gem::PackageTask.new(spec) do |pkg|
   pkg.need_zip = true
   pkg.need_tar = true
-  pkg.package_files = spec.files
-end
-
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.need_zip = false
-  pkg.need_tar = false
 end
 
 task :default => [:package, :gem]

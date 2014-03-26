@@ -1520,7 +1520,7 @@ static VALUE rb_gsl_matrix_complex_indgen_singleton(int argc, VALUE *argv, VALUE
 }
 
 
-static int gsl_matrix_complex_equal_witg_eps(const gsl_matrix_complex *m1,
+static int rb_gsl_matrix_complex_equal_witg_eps(const gsl_matrix_complex *m1,
   const gsl_matrix_complex *m2, double eps)
 {
   gsl_complex z1, z2;
@@ -1537,7 +1537,7 @@ static int gsl_matrix_complex_equal_witg_eps(const gsl_matrix_complex *m1,
   return 1;
 }
 
-static VALUE rb_gsl_matrix_complex_equal(int argc, VALUE *argv, VALUE obj)
+static VALUE rb_rb_gsl_matrix_complex_equal(int argc, VALUE *argv, VALUE obj)
 {
   gsl_matrix_complex *m1, *m2;
   double eps = 1e-8;
@@ -1555,7 +1555,7 @@ static VALUE rb_gsl_matrix_complex_equal(int argc, VALUE *argv, VALUE obj)
   Data_Get_Struct(obj, gsl_matrix_complex, m1);
   CHECK_MATRIX_COMPLEX(argv[0]);
   Data_Get_Struct(argv[0], gsl_matrix_complex, m2);
-  ret = gsl_matrix_complex_equal_witg_eps(m1, m2, eps);
+  ret = rb_gsl_matrix_complex_equal_witg_eps(m1, m2, eps);
   if (ret == 1) return Qtrue;
   else return Qfalse;
 }
@@ -1563,7 +1563,7 @@ static VALUE rb_gsl_matrix_complex_equal(int argc, VALUE *argv, VALUE obj)
 static VALUE rb_gsl_matrix_complex_not_equal(int argc, VALUE *argv, VALUE obj)
 {
   VALUE ret;
-  ret = rb_gsl_matrix_complex_equal(argc, argv, obj);
+  ret = rb_rb_gsl_matrix_complex_equal(argc, argv, obj);
   if (ret == Qtrue) return Qfalse;
   else return Qtrue;
 }
@@ -1725,7 +1725,7 @@ void Init_gsl_matrix_complex(VALUE module)
   rb_define_method(cgsl_matrix_complex, "indgen!", rb_gsl_matrix_complex_indgen_bang, -1);
   rb_define_singleton_method(cgsl_matrix_complex, "indgen", rb_gsl_matrix_complex_indgen_singleton, -1);
   
-  rb_define_method(cgsl_matrix_complex, "equal?", rb_gsl_matrix_complex_equal, -1);
+  rb_define_method(cgsl_matrix_complex, "equal?", rb_rb_gsl_matrix_complex_equal, -1);
   rb_define_alias(cgsl_matrix_complex, "==", "equal?");
   rb_define_method(cgsl_matrix_complex, "not_equal?", rb_gsl_matrix_complex_not_equal, -1);
   rb_define_alias(cgsl_matrix_complex, "!=", "not_equal?");    
